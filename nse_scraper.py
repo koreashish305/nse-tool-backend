@@ -1,27 +1,27 @@
 import requests
 
 BASE_URL = "https://www.nseindia.com"
+
 headers = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
     "Accept": "application/json",
     "Accept-Language": "en-US,en;q=0.9",
     "Connection": "keep-alive",
+    "Referer": BASE_URL,
+    "Accept-Encoding": "gzip, deflate, br",
 }
 
 def get_session():
     session = requests.Session()
     session.headers.update(headers)
-    # Load homepage once to get cookies
-    session.get(BASE_URL)
+    # Load homepage to get cookies
+    session.get(BASE_URL, timeout=5)
     return session
 
 def get_sector_indices():
-    """
-    Fetch live NSE sector indices from NSE API.
-    """
     session = get_session()
     url = f"{BASE_URL}/api/allIndices"
-    res = session.get(url)
+    res = session.get(url, timeout=10)
     res.raise_for_status()
     data = res.json()
 
@@ -35,12 +35,9 @@ def get_sector_indices():
     return indices
 
 def get_stocks_in_index(index_name: str):
-    """
-    Fetch live stock constituents for a given NSE index.
-    """
     session = get_session()
     url = f"{BASE_URL}/api/equity-stockIndices?index={index_name}"
-    res = session.get(url)
+    res = session.get(url, timeout=10)
     res.raise_for_status()
     data = res.json()
 
