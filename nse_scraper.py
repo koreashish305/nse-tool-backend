@@ -2,17 +2,25 @@ import requests
 
 BASE_URL = "https://www.nseindia.com"
 headers = {
-    "User-Agent": "Mozilla/5.0",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
     "Accept": "application/json",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Connection": "keep-alive",
 }
+
+def get_session():
+    session = requests.Session()
+    session.headers.update(headers)
+    # Load homepage once to get cookies
+    session.get(BASE_URL)
+    return session
 
 def get_sector_indices():
     """
     Fetch live NSE sector indices from NSE API.
     """
+    session = get_session()
     url = f"{BASE_URL}/api/allIndices"
-    session = requests.Session()
-    session.headers.update(headers)
     res = session.get(url)
     res.raise_for_status()
     data = res.json()
@@ -30,9 +38,8 @@ def get_stocks_in_index(index_name: str):
     """
     Fetch live stock constituents for a given NSE index.
     """
+    session = get_session()
     url = f"{BASE_URL}/api/equity-stockIndices?index={index_name}"
-    session = requests.Session()
-    session.headers.update(headers)
     res = session.get(url)
     res.raise_for_status()
     data = res.json()
@@ -43,7 +50,7 @@ def get_stocks_in_index(index_name: str):
             "symbol": item["symbol"],
             "name": item["symbol"],
             "current_volume": item.get("quantityTraded", 0),
-            "avg_volume": item.get("totalTradedVolume", 1),  # fallback to avoid divide by zero
-            "prices": [item["lastPrice"]],  # placeholder for RSI calculation
+            "avg_volume": item.get("totalTradedVolume", 1),
+            "prices": [item["lastPrice"]],
         })
     return stocks
