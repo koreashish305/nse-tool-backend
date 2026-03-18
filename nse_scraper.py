@@ -1,33 +1,49 @@
 import requests
-from bs4 import BeautifulSoup
 
 BASE_URL = "https://www.nseindia.com"
 headers = {
     "User-Agent": "Mozilla/5.0",
-    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "application/json",
 }
 
 def get_sector_indices():
-    # Placeholder scraping logic (NSE HTML may change)
-    url = f"{BASE_URL}/market-data/live-equity-market?tab=sectorIndices"
-    res = requests.get(url, headers=headers)
+    """
+    Fetch live NSE sector indices from NSE API.
+    """
+    url = f"{BASE_URL}/api/allIndices"
+    session = requests.Session()
+    session.headers.update(headers)
+    res = session.get(url)
     res.raise_for_status()
-    soup = BeautifulSoup(res.text, "html.parser")
+    data = res.json()
 
     indices = []
-    for row in soup.select("table tr"):
-        cols = [c.get_text(strip=True) for c in row.select("td")]
-        if len(cols) >= 3:
-            indices.append({
-                "name": cols[0],
-                "last_price": cols[1],
-                "change_pct": cols[2],
-            })
+    for item in data["data"]:
+        indices.append({
+            "name": item["indexName"],
+            "last_price": item["last"],
+            "change_pct": item["variation"],
+        })
     return indices
 
-def get_stocks_in_index(index_name):
-    # Dummy data for now (replace with NSE API calls later)
-    return [
-        {"symbol": "RELIANCE", "name": "Reliance Industries", "current_volume": 5000000, "avg_volume": 2000000, "prices": [2500, 2520, 2550]},
-        {"symbol": "TATASTEEL", "name": "Tata Steel", "current_volume": 3000000, "avg_volume": 1000000, "prices": [100, 105, 110]},
-    ]
+def get_stocks_in_index(index_name: str):
+    """
+    Fetch live stock constituents for a given NSE index.
+    """
+    url = f"{BASE_URL}/api/equity-stockIndices?index={index_name}"
+    session = requests.Session()
+    session.headers.update(headers)
+    res = session.get(url)
+    res.raise_for_status()
+    data = res.json()
+
+    stocks = []
+    for item in data["data"]:
+        stocks.append({
+            "symbol": item["symbol"],
+            "name": item["symbol"],
+            "current_volume": item.get("quantityTraded", 0),
+            "avg_volume": item.get("totalTradedVolume", 1),  # fallback to avoid divide by zero
+            "prices": [item["lastPrice"]],  # placeholder for RSI calculation
+        })
+    return stocks
